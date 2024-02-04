@@ -1,17 +1,17 @@
-const dotenv = require('dotenv')
-dotenv.config();
-var createError = require("http-errors");
+
 var express = require("express");
 var path = require("path");
 var cookieParser = require("cookie-parser");
 var logger = require("morgan");
+var createError = require("http-errors");
 
 var indexRouter = require("./routes/index");
 var usersRouter = require("./routes/users");
-
+const cors = require('cors');
 var app = express();
 
 const mongoose = require("mongoose");
+
 const MONGO_URL = process.env.MONGO_URL
 if (!MONGO_URL){
   console.error(`MONGO_URL is not defined.`);
@@ -30,6 +30,7 @@ mongoose
     console.error("연결 실패");
   });
 
+app.use(cors())
 app.use(logger("dev"));
 app.use("", (req, res, next) => {
   console.log("AB");
@@ -78,9 +79,8 @@ app.use(function (err, req, res, next) {
   // set locals, only providing error in development
   res.locals.message = err.message;
   res.locals.error = req.app.get("env") === "development" ? err : {};
-  console.error(err);
   // render the error page
-  res.status(err.status || 500);
+  res.status(err.status || 500).json(err);
   // res.render('error');
 });
 
