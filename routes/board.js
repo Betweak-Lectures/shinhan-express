@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const Board = require('../models/Board');
+const {Board, Comment} = require('../models/Board');
 /**
  * /board           GET  - 게시글 리스트를 조회.
  * /board           POST - 게시글 자원을 생성해 줘
@@ -42,9 +42,131 @@ router.post('/', (req, res, next)=>{
     }).catch(err=>{
         next(err)
     })
+});
+
+/**
+ * /:boardId (GET) 
+ */
+router.get('/:boardId', (req, res, next)=>{
+    const boardId = req.params.boardId
+    Board.findById(boardId).then(board=>{
+        res.json(board);
+    }).catch(err=>{
+        next(err);
+    })
+})
+
+/**
+ * /:boardId (PUT) 
+ */
+router.put('/:boardId', (req, res, next)=>{
+    const boardId = req.params.boardId;
+    const { title, content, author } = req.body
+    Board.findByIdAndUpdate(boardId, {
+        title,
+        content,
+        author
+    }).then(data=>{
+        res.json(data);
+    }).catch(err=>{
+        next(err);
+    })
+})
+
+/**
+ * /:boardId (delete) 
+ */
+router.delete('/:boardId', (req, res, next)=>{
+    const boardId = req.params.boardId;
+    Board.findByIdAndDelete(boardId, {
+        boardId
+    }).then(data=>{
+        res.json(data);
+    }).catch(err=>{
+        next(err);
+    })
 })
 
 
+/**
+ * Comment (댓글에 대한 CRUD)
+ * 
+ *   /:boardId/comments              GET  - (boardId에 해당하는 댓글 조회)
+ *   /:boardId/comments             POST  - (boardId에 해당하는 댓글 추가)
+ *   /:boardId/comments/:commentId   GET  - (boardId에 해당하는 댓글 중 commentId에 해당하는 댓글 조회)
+ *   /:boardId/comments/:commentId   PUT  - (boardId에 해당하는 댓글 중 commentId에 해당하는 댓글 수정)
+ *   /:boardId/comments/:commentId DELETE - (boardId에 해당하는 댓글 중 commentId에 해당하는 댓글 삭제)
+ */
+
+/**
+ * /:boardId/comments              GET  - (boardId에 해당하는 댓글 조회)
+ */
+router.get('/:boardId/comments', (req, res, next)=>{
+    const { boardId } = req.params;
+    Comment.find({
+        board: boardId
+    }).then(comments=>{
+        res.json(comments);
+    }).catch(err=>{
+        next(err);
+    });
+})
+/** 
+ * /:boardId/comments             POST  - (boardId에 해당하는 댓글 추가)
+ */
+router.post("/:boardId/comments", (req, res, next)=>{
+    const { boardId } = req.params;
+    const {content, author} = req.body;
+    Comment.create({
+        content,
+        author,
+        board: boardId
+    }).then(data=>{
+        res.json(data);
+    }).catch(err=>{
+        next(err);
+    })
+})
+
+/**
+ * /:boardId/comments/:commentId   GET  - (boardId에 해당하는 댓글 중 commentId에 해당하는 댓글 조회)
+ */
+
+
+
+/**
+ * /:boardId/comments/:commentId   PUT  - (boardId에 해당하는 댓글 중 commentId에 해당하는 댓글 수정)
+ */
+router.put("/:boardId/comments/:commentId", (req, res, next)=>{
+    const { boardId, commentId } = req.params;
+    const {content, author} = req.body;
+
+    Comment.updateOne({
+        board: boardId,
+        _id: commentId
+    }, {author, content}).then(data=>{
+        res.json(data);
+    }).catch(err=>{
+        next(err);
+    });
+})
+
+
+/**
+ * /:boardId/comments/:commentId DELETE - (boardId에 해당하는 댓글 중 commentId에 해당하는 댓글 삭제)
+ */
+router.delete("/:boardId/comments/:commentId", (req, res, next)=>{
+    const { boardId, commentId } = req.params;
+
+    Comment.deleteOne({
+        board: boardId,
+        _id: commentId
+    }).then(data=>{
+        res.json(data);
+    }).catch(err=>{
+        next(err);
+    });
+})
 
 
 module.exports = router; 
