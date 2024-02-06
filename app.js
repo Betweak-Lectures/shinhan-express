@@ -3,6 +3,32 @@ var express = require("express");
 var path = require("path");
 var cookieParser = require("cookie-parser");
 var logger = require("morgan");
+
+
+const passport = require('passport');
+const JwtStrategy = require('passport-jwt').Strategy;
+const ExtractJwt = require('passport-jwt').ExtractJwt;
+
+const options = {
+  jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+  secretOrKey: 'your_secret_key' // Replace with your secret key
+};
+
+passport.use(new JwtStrategy(options, function(jwt_payload, done) {
+
+  User.findOne({id: jwt_payload.sub}, function(err, user) {
+    if (err) {
+      return done(err, false);
+    }
+    if (user) {
+      return done(null, user);
+    } else {
+      return done(null, false);
+    }
+  });
+
+}));
+
 var createError = require("http-errors");
 
 var indexRouter = require("./routes/index");
