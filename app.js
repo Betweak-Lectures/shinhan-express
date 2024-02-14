@@ -1,49 +1,16 @@
-
+var createError = require("http-errors");
 var express = require("express");
 var path = require("path");
 var cookieParser = require("cookie-parser");
 var logger = require("morgan");
 
-
-const passport = require('passport');
-const JwtStrategy = require('passport-jwt').Strategy;
-const ExtractJwt = require('passport-jwt').ExtractJwt;
-
-const options = {
-  jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-  secretOrKey: 'your_secret_key' // Replace with your secret key
-};
-
-passport.use(new JwtStrategy(options, function(jwt_payload, done) {
-
-  User.findOne({id: jwt_payload.sub}, function(err, user) {
-    if (err) {
-      return done(err, false);
-    }
-    if (user) {
-      return done(null, user);
-    } else {
-      return done(null, false);
-    }
-  });
-
-}));
-
-var createError = require("http-errors");
-
-var indexRouter = require("./routes/index");
-var usersRouter = require("./routes/users");
-const cors = require('cors');
-var app = express();
-
 const mongoose = require("mongoose");
 
-const MONGO_URL = process.env.MONGO_URL
-if (!MONGO_URL){
-  console.error(`MONGO_URL is not defined.`);
-  process.exit();
-}
+// dotenv추가
+const dotenv = require("dotenv");
+dotenv.config();
 
+const MONGO_URL = process.env.MONGO_URL;
 mongoose
   .connect(MONGO_URL, {
     w: "majority",
@@ -56,44 +23,35 @@ mongoose
     console.error("연결 실패");
   });
 
-app.use(cors())
-app.use(logger("dev"));
-app.use("", (req, res, next) => {
-  console.log("AB");
-  req.user = {
-    name: "신윤수",
-  };
-  if (req.user === undefined) {
-    res.status(403).json({});
-  }
-  next();
-});
+const apiRouter = require("./routes/api");
 
+var app = express();
+
+const session = require("express-session");
+
+app.use(logger("dev"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
+
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "<my-secret>",
+    resave: true,
+    saveUninitialized: true,
+    cookie: {
+      httpOnly: true,
+      secure: true, // https만 가능
+    },
+  })
+);
 app.use(express.static(path.join(__dirname, "public")));
 
-app.use("/", indexRouter);
-app.use("/users", usersRouter);
-const boardRouter = require("./routes/board");
-const birdsRouter = require("./routes/birds");
-const { exit } = require('process');
-app.use("/birds", birdsRouter);
+const { authenticate } = require("./utils/auth");
 
-app.use("/board", boardRouter);
-// console.log(app._router);
-app.get("/sample", (req, res) => {
-  res.send("Sample");
-});
+app.use(authenticate);
 
-app.get("/sample", (req, res) => {
-  res.send("Sample2");
-});
-
-app.post("/sample", (req, res) => {
-  res.send("Create First POST router");
-});
+app.use("/api", apiRouter);
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
@@ -105,9 +63,10 @@ app.use(function (err, req, res, next) {
   // set locals, only providing error in development
   res.locals.message = err.message;
   res.locals.error = req.app.get("env") === "development" ? err : {};
+
   // render the error page
-  res.status(err.status || 500).json(err);
-  // res.render('error');
+  res.status(err.status || 500);
+  res.json({ error: res.locals });
 });
 
 module.exports = app;
