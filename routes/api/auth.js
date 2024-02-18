@@ -13,7 +13,10 @@ const authTokenKey = process.env.AUTH_TOKEN_KEY || "authToken";
 router.post("/login", async (req, res, next) => {
   try {
     const { email, password } = req.body;
+
     const user = await User.login(email, password);
+    console.log(user);
+
     const tokenMaxAge = 60 * 60 * 24 * 3;
     const token = createToken(user, tokenMaxAge);
 
