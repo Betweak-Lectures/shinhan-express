@@ -14,25 +14,6 @@ function verifyToken(_token) {
   return verifiedToken;
 }
 
-// function authenticate(req, res, next) {
-//   let token = req.cookies.authToken;
-//   let headerToken = req.headers.authorization;
-//   if (!token && headerToken) {
-//     token = headerToken.split(" ")[1];
-//   }
-
-//   const user = verifyToken(token);
-//   req.user = user;
-
-//   if (!user) {
-//     const error = new Error("Authorization Failed");
-//     error.status = 403;
-
-//     next(error);
-//   }
-//   next();
-// }
-
 function authenticate(req, res, next) {
   let token = req.cookies.authToken;
   let headerToken = req.headers.authorization;

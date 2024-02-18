@@ -22,6 +22,11 @@ const commentSchema = new mongoose.Schema(
       ref: User,
       required: true,
     },
+    deletedAt: {
+      type: Date,
+      default: null,
+      select: false,
+    },
   },
   {
     timestamps: true,
@@ -37,14 +42,51 @@ const commentSchema = new mongoose.Schema(
   }
 );
 
-// Board.statics.writeBoard = async function (title, content, author) {
-//   try {
-//     const board = await this.create({ title, content, author });
-//     return board;
-//   } catch (err) {
-//     throw err;
-//   }
-// };
+commentSchema.statics.getCommentList = async function (
+  boardId,
+  page = 1,
+  size = 10
+) {
+  return await this.find({ deletedAt: null, board: boardId })
+    .populate({ path: "author", select: "_id nickname" })
+    .populate("commentCount")
+    .sort({ createdAt: -1 })
+    .skip((page - 1) * size)
+    .limit(size);
+};
+
+commentSchema.statics.writeComment = async function (boardId, content, author) {
+  try {
+    const comment = await this.create({
+      content,
+      board: boardId,
+      author: author,
+    });
+    return comment;
+  } catch (err) {
+    throw err;
+  }
+};
+
+commentSchema.statics.updateComment = async function (
+  commentId,
+  authorId,
+  newComment
+) {
+  return await this.findOneAndUpdate(
+    { _id: commentId, author: authorId, deletedAt: null },
+    { content: newComment }
+  );
+};
+
+commentSchema.statics.deleteComment = async function (commentId, authorId) {
+  return await this.findOneAndUpdate(
+    { _id: commentId, author: authorId, deletedAt: null },
+    {
+      deletedAt: Date.now(),
+    }
+  );
+};
 
 const Comment = mongoose.model("Comment", commentSchema);
 
